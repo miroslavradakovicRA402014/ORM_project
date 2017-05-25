@@ -1,0 +1,11 @@
+﻿  vezba9.cpp
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(25): warning C4101: 'sentBytes': unreferenced local variable
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(215): warning C4101: 'data': unreferenced local variable
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(214): warning C4101: 'uh': unreferenced local variable
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(216): warning C4101: 'seq_num': unreferenced local variable
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(257): warning C4101: 'uh': unreferenced local variable
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(259): warning C4101: 'seq_num': unreferenced local variable
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(243): warning C4700: uninitialized local variable 'cmp' used
+c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(243): warning C4700: uninitialized local variable 'key' used
+vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
+  Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM-2_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
