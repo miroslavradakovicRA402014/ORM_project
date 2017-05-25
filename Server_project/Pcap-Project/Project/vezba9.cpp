@@ -10,13 +10,16 @@
 #include <pcap.h>
 #include "protocol_headers.h"
 
-void packet_handler(unsigned char* user, const struct pcap_pkthdr* packet_header,const unsigned char* packet_data);
+//void packet_handler(unsigned char* user,struct pcap_pkthdr* packet_header,unsigned char* packet_data);
+void packet_handler(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
 void sort_packets();
 void send_packets();
 
-unsigned char* packet_buffer[100];
+//unsigned char* packet_buffer[10];
 pcap_t* device_handle_in, *device_handle_out;
 static int packet_num = 0;
+ex_udp_datagram* packet_buffer[10];
+
 
 int main()
 {
@@ -28,8 +31,11 @@ int main()
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
 
+	struct pcap_pkthdr* packet_header;
+	unsigned char* packet_data;
+
 	
-	char filter_exp[] = "udp and ip src 192.168.0.20";
+	char filter_exp[] = "udp and ip src 10.81.2.48";
 	struct bpf_program fcode;
 	
 	/**************************************************************/
@@ -132,16 +138,25 @@ int main()
 
 	/**************************************************************/
 	// Fill the queue with the packets from the network
-	pcap_loop(device_handle_in, 0, packet_handler, NULL);
+	
+	//pcap_loop(device_handle_in, 0, packet_handler, NULL);
+	
+	while (1) 
+	{
+		if (pcap_next_ex(device_handle_in, &packet_header, (const u_char**)&packet_data) == 1)
+		{
+			packet_handler(packet_header, packet_data);
+		}
+	}
 
 	/**************************************************************/
 	// Transmit the queue 
 	// ...parameter “sync” tells if the timestamps must be respected (sync=1 (true) or sync=0 (false))
 
-	Sleep(2000);
+	//Sleep(2000);
 
 	//sort_packets();
-	send_packets();
+	//send_packets();
 
 	/*
 	if ((sentBytes = pcap_sendqueue_transmit(device_handle_out, queue_udp, 0)) < queue_udp->len)
@@ -162,7 +177,7 @@ int main()
 }
 
 // Callback function invoked by libpcap/WinPcap for every incoming packet
-void packet_handler(unsigned char* user, const struct pcap_pkthdr* packet_header, const unsigned char* packet_data)
+void packet_handler(struct pcap_pkthdr* packet_header,unsigned char* packet_data)
 {
 	// Retrieve position of ethernet_header
 	/*
@@ -194,16 +209,66 @@ void packet_handler(unsigned char* user, const struct pcap_pkthdr* packet_header
 		*/
 		//}
 	//}
-
-	packet_buffer[packet_num] = new unsigned char[packet_header->len];
+	ex_udp_datagram* rec_packet;
+	rec_packet = new ex_udp_datagram(packet_header,packet_data);
+	
+	packet_buffer[packet_num] = new ex_udp_datagram(packet_header,packet_data);
 	int len = packet_header->len;
 
+	//printf("Loooodilo mozga %lu \n",*(watch->seq_number));
+    /*
 	for (int i = 0; i < len; i++) 
 	{
 		packet_buffer[packet_num][i] = packet_data[i];
 	}
+	*/
 	packet_num++;
-	printf("%d", packet_num);
+	
+	//if (packet_num % 10 == 0) 
+	//{
+		/*
+		//sort_packets();
+		printf("\n");
+		send_packets();
+		*/
+		rec_packet->eh->dest_address[0] = 0x78;
+		rec_packet->eh->dest_address[1] = 0x0c;
+		rec_packet->eh->dest_address[2] = 0xb8;
+		rec_packet->eh->dest_address[3] = 0xf7;
+		rec_packet->eh->dest_address[4] = 0x71;
+		rec_packet->eh->dest_address[5] = 0xa0;
+
+		rec_packet->eh->src_address[0] = 0x2c;
+		rec_packet->eh->src_address[1] = 0xd0;
+		rec_packet->eh->src_address[2] = 0x5a;
+		rec_packet->eh->src_address[3] = 0x90;
+		rec_packet->eh->src_address[4] = 0xba;
+		rec_packet->eh->src_address[5] = 0x9a;
+
+		rec_packet->iph->dst_addr[0] = 10;
+		rec_packet->iph->dst_addr[1] = 81;
+		rec_packet->iph->dst_addr[2] = 2;
+		rec_packet->iph->dst_addr[3] = 48;
+
+		rec_packet->iph->src_addr[0] = 10;
+		rec_packet->iph->src_addr[1] = 81;
+		rec_packet->iph->src_addr[2] = 2;
+		rec_packet->iph->src_addr[3] = 99;
+		packet_num = 0;
+
+		while (1)
+		{
+			if (pcap_sendpacket(device_handle_out, packet_data, packet_header->len) == -1)
+			{
+				printf("Warning: The packet will not be sent.\n");
+			}
+			Sleep(100);
+		}
+		
+
+	//}
+	
+	printf(" %d ", packet_num);
 }
 
 void sort_packets() 
@@ -216,24 +281,28 @@ void sort_packets()
 	u_long seq_num;
 	u_long key,cmp;
 
-	for (i = 0; i < packet_num-1; i++) 
+	for (i = 0; i < BUFF_LEN; i++) 
 	{
 		{
+			/*
 			eh = (ethernet_header*)packet_buffer[i];
 			ih = (ip_header*)(packet_buffer[i] + sizeof(ethernet_header));
 			udp_header* uh = (udp_header*)((unsigned char*)ih + 4 * (ntohs(ih->header_length)));
-			unsigned char *data = (unsigned char*)((unsigned char*)uh + sizeof(udp_header));
-			u_long key = (u_long)(*data);
+			*/
+			u_long *data = (u_long*)((unsigned char*)packet_buffer[i]+ sizeof(ethernet_header) + sizeof(ip_header) +sizeof(udp_header));
+			u_long key = (u_long)ntohs((*data));
 		}
 		j = i - 1;
 		{
 			if (j != -1)
 			{
+				/*
 				eh = (ethernet_header*)packet_buffer[j];
 				ih = (ip_header*)(packet_buffer[j] + sizeof(ethernet_header));
 				udp_header* uh = (udp_header*)((unsigned char*)ih + 4 * (ntohs(ih->header_length)));
-				unsigned char *data = (unsigned char*)((unsigned char*)uh + sizeof(udp_header));
-				u_long cmp = (u_long)(*data);
+				*/
+				u_long *data = (u_long*)((unsigned char*)packet_buffer[j] + sizeof(ethernet_header) + sizeof(ip_header) + sizeof(udp_header));
+				u_long cmp = (u_long)ntohs((*data));
 			}
 			else 
 			{
@@ -256,25 +325,30 @@ void send_packets()
 	ethernet_header* eh;
 	ip_header* ih;
 	udp_header* uh;
-	//unsigned char *data;
+	u_long *seq_num;
+	u_long tmp_seq_num;
 	//u_long seq_num;
 	//unsigned char flags = 0x00;
+	unsigned char* packet;
 	
 	unsigned char eh_tmp;
 	unsigned char ih_tmp;
 
 
-	for (i = 0; i < packet_num; i++)
+	for (i = 0; i < BUFF_LEN; i++)
 	{
 		
-		eh = (ethernet_header*)packet_buffer[i];
-		ih = (ip_header*)(packet_buffer[i] + sizeof(ethernet_header));
-		uh = (udp_header*)((unsigned char*)ih + 4 * (ntohs(ih->header_length)));
+		eh = (ethernet_header*)packet_buffer[i]->eh;
+		ih = (ip_header*)packet_buffer[i]->iph;
+		uh = (udp_header*)packet_buffer[i]->uh;
 		//data = (unsigned char*)((unsigned char*)uh + sizeof(udp_header));
 		//*data = (unsigned char)((u_long)(*data));
-		
-		int j;
+		seq_num = (u_long*)packet_buffer[i]->seq_number;
+		tmp_seq_num = ntohs(*seq_num);
+		printf("Send ack= %lu \n", (u_long)((*seq_num)));
 
+		int j;
+		/*
 		for (j = 0; j < 6; j++)
 		{
 			eh_tmp = eh->dest_address[i];
@@ -288,10 +362,66 @@ void send_packets()
 			ih->dst_addr[i] = ih->src_addr[i];
 			ih->src_addr[i] = ih_tmp;
 		}
+		*/
+		packet = new unsigned char(4 + ntohs(uh->datagram_length));
 
-		if (pcap_sendpacket(device_handle_out, packet_buffer[i], 4+sizeof(eh)+sizeof(ih)+sizeof(uh)) == -1)
+		ex_udp_datagram *udp_d = new ex_udp_datagram(packet);
+
+		udp_d->seq_number = packet_buffer[i]->seq_number;
+		udp_d->eh = packet_buffer[i]->eh;
+		udp_d->iph = packet_buffer[i]->iph;
+		udp_d->uh = packet_buffer[i]->uh;
+		udp_d->iph->ttl = 100;
+
+        /*
+		for (j = 0; j < 6; j++)
 		{
-			printf("Warning: The packet will not be sent.\n");
+			eh_tmp = udp_d->eh->dest_address[j];
+			udp_d->eh->dest_address[j] = udp_d->eh->src_address[j];
+			udp_d->eh->src_address[j] = eh_tmp;
+		}
+
+		for (j = 0; j < 4; j++)
+		{
+			ih_tmp = udp_d->iph->dst_addr[j];
+			udp_d->iph->dst_addr[j] = udp_d->iph->src_addr[j];
+			udp_d->iph->src_addr[j] = ih_tmp;
+		}
+		*/
+		udp_d->eh->dest_address[0] = 0x78;
+		udp_d->eh->dest_address[1] = 0x0c;
+		udp_d->eh->dest_address[2] = 0xb8;
+		udp_d->eh->dest_address[3] = 0xf7;
+		udp_d->eh->dest_address[4] = 0x71;
+		udp_d->eh->dest_address[5] = 0xa0;
+
+		udp_d->eh->src_address[0] = 0x2c;
+		udp_d->eh->src_address[1] = 0xd0;
+		udp_d->eh->src_address[2] = 0x5a;
+		udp_d->eh->src_address[3] = 0x90;
+		udp_d->eh->src_address[4] = 0xba;
+		udp_d->eh->src_address[5] = 0x9a;
+
+		udp_d->iph->dst_addr[0] = 10;
+		udp_d->iph->dst_addr[1] = 81;
+		udp_d->iph->dst_addr[2] = 2;
+		udp_d->iph->dst_addr[3] = 48;
+
+		udp_d->iph->src_addr[0] = 10;
+		udp_d->iph->src_addr[1] = 81;
+		udp_d->iph->src_addr[2] = 2;
+		udp_d->iph->src_addr[3] = 99;
+
+
+		int tmp_len = 4 + ntohs(uh->datagram_length);
+
+		while (1)
+		{
+			if (pcap_sendpacket(device_handle_out, packet, 4 + ntohs(uh->datagram_length)) == -1)
+			{
+				printf("Warning: The packet will not be sent.\n");
+			}
+			Sleep(100);
 		}
 	}
 

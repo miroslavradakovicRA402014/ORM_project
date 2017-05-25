@@ -1,6 +1,7 @@
 /* PROTOCOL HEADERS */
-
+#define BUFF_LEN 10
 // Ethernet header
+
 typedef struct ethernet_header{
 	unsigned char dest_address[6];		// Destination address
 	unsigned char src_address[6];		// Source address
@@ -47,3 +48,38 @@ typedef struct tcp_header {
 	unsigned short urgent_pointer;		// Urgent pointer
 	// + variable part of the header
 } tcp_header;
+
+typedef struct ex_udp_datagram
+{
+	ethernet_header *eh;
+	ip_header *iph;
+	udp_header *uh;
+	u_long *seq_number;
+	unsigned char* data;
+
+
+	ex_udp_datagram(struct pcap_pkthdr *packet_header, unsigned char *packet_data)
+	{
+		eh = (ethernet_header*)packet_data;
+		iph = (ip_header*)(packet_data + sizeof(ethernet_header));
+
+		int tmp = iph->header_length * 4;
+
+		uh = (udp_header*)((unsigned char*)iph + tmp);
+
+		seq_number = (u_long *)((unsigned char*)uh +sizeof(udp_header));
+		data = (unsigned char *)((unsigned char*)uh+sizeof(udp_header)+sizeof(u_long));
+	}
+
+	ex_udp_datagram(unsigned char *packet_data)
+	{
+		eh = (ethernet_header*)packet_data;
+		iph = (ip_header*)(packet_data + sizeof(ethernet_header));
+
+		int tmp = iph->header_length * 4;
+
+		uh = (udp_header*)((unsigned char*)iph + tmp);
+
+		seq_number = (u_long *)((unsigned char*)uh +sizeof(udp_header));
+	}
+} ex_udp_datagram;

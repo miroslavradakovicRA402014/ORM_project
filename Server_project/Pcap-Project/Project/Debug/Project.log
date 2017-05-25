@@ -1,11 +1,17 @@
 ﻿  vezba9.cpp
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(25): warning C4101: 'sentBytes': unreferenced local variable
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(215): warning C4101: 'data': unreferenced local variable
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(214): warning C4101: 'uh': unreferenced local variable
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(216): warning C4101: 'seq_num': unreferenced local variable
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(257): warning C4101: 'uh': unreferenced local variable
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(259): warning C4101: 'seq_num': unreferenced local variable
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(243): warning C4700: uninitialized local variable 'cmp' used
-c:\users\miroslav\desktop\orm-2_project\server_project\pcap-project\project\vezba9.cpp(243): warning C4700: uninitialized local variable 'key' used
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(28): warning C4101: 'sentBytes': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(293): warning C4244: 'argument': conversion from 'u_long' to 'u_short', possible loss of data
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(305): warning C4244: 'argument': conversion from 'u_long' to 'u_short', possible loss of data
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(278): warning C4101: 'ih': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(280): warning C4101: 'data': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(279): warning C4101: 'uh': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(281): warning C4101: 'seq_num': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(277): warning C4101: 'eh': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(347): warning C4244: 'argument': conversion from 'u_long' to 'u_short', possible loss of data
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(335): warning C4101: 'ih_tmp': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(334): warning C4101: 'eh_tmp': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(350): warning C4101: 'j': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(312): warning C4700: uninitialized local variable 'cmp' used
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(312): warning C4700: uninitialized local variable 'key' used
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
-  Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM-2_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
+  Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
