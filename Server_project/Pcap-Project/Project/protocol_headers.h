@@ -78,7 +78,7 @@ typedef struct ex_udp_datagram
 
 		int tmp = iph->header_length * 4;
 
-		uh = (udp_header*)((unsigned char*)iph + tmp);
+		uh = (udp_header*)((unsigned char*)iph + 20);
 
 		seq_number = (u_long *)((unsigned char*)uh +sizeof(udp_header));
 	}

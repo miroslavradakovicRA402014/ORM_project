@@ -13,7 +13,8 @@
 //void packet_handler(unsigned char* user,struct pcap_pkthdr* packet_header,unsigned char* packet_data);
 void packet_handler(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
 void sort_packets();
-void send_packets();
+void send_packets(/*unsigned char* packet_data*/);
+void create_ex_udp_packet();
 
 //unsigned char* packet_buffer[10];
 pcap_t* device_handle_in, *device_handle_out;
@@ -224,14 +225,14 @@ void packet_handler(struct pcap_pkthdr* packet_header,unsigned char* packet_data
 	*/
 	packet_num++;
 	
-	//if (packet_num % 10 == 0) 
-	//{
-		/*
+	if (packet_num % 10 == 0) 
+	{
+		
 		//sort_packets();
-		printf("\n");
-		send_packets();
-		*/
-		rec_packet->eh->dest_address[0] = 0x78;
+		//printf("\n");
+		send_packets(/*packet_data*/);
+	}
+	/*	rec_packet->eh->dest_address[0] = 0x78;
 		rec_packet->eh->dest_address[1] = 0x0c;
 		rec_packet->eh->dest_address[2] = 0xb8;
 		rec_packet->eh->dest_address[3] = 0xf7;
@@ -263,7 +264,7 @@ void packet_handler(struct pcap_pkthdr* packet_header,unsigned char* packet_data
 				printf("Warning: The packet will not be sent.\n");
 			}
 			Sleep(100);
-		}
+		}*/
 		
 
 	//}
@@ -363,7 +364,7 @@ void send_packets()
 			ih->src_addr[i] = ih_tmp;
 		}
 		*/
-		packet = new unsigned char(4 + ntohs(uh->datagram_length));
+		packet = new unsigned char[4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)];
 
 		ex_udp_datagram *udp_d = new ex_udp_datagram(packet);
 
@@ -388,12 +389,19 @@ void send_packets()
 			udp_d->iph->src_addr[j] = ih_tmp;
 		}
 		*/
-		udp_d->eh->dest_address[0] = 0x78;
+		/*udp_d->eh->dest_address[0] = 0x78;
 		udp_d->eh->dest_address[1] = 0x0c;
 		udp_d->eh->dest_address[2] = 0xb8;
 		udp_d->eh->dest_address[3] = 0xf7;
 		udp_d->eh->dest_address[4] = 0x71;
-		udp_d->eh->dest_address[5] = 0xa0;
+		udp_d->eh->dest_address[5] = 0xa0;*/
+
+		udp_d->eh->dest_address[0] = 0x2c;
+		udp_d->eh->dest_address[1] = 0xd0;
+		udp_d->eh->dest_address[2] = 0x5a;
+		udp_d->eh->dest_address[3] = 0x90;
+		udp_d->eh->dest_address[4] = 0xba;
+		udp_d->eh->dest_address[5] = 0x9a;
 
 		udp_d->eh->src_address[0] = 0x2c;
 		udp_d->eh->src_address[1] = 0xd0;
@@ -405,7 +413,7 @@ void send_packets()
 		udp_d->iph->dst_addr[0] = 10;
 		udp_d->iph->dst_addr[1] = 81;
 		udp_d->iph->dst_addr[2] = 2;
-		udp_d->iph->dst_addr[3] = 48;
+		udp_d->iph->dst_addr[3] = 99;
 
 		udp_d->iph->src_addr[0] = 10;
 		udp_d->iph->src_addr[1] = 81;
@@ -417,7 +425,7 @@ void send_packets()
 
 		while (1)
 		{
-			if (pcap_sendpacket(device_handle_out, packet, 4 + ntohs(uh->datagram_length)) == -1)
+			if (pcap_sendpacket(device_handle_in, packet, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 			{
 				printf("Warning: The packet will not be sent.\n");
 			}
@@ -425,4 +433,23 @@ void send_packets()
 		}
 	}
 
+}
+
+void create_ex_udp_packet()
+{
+
+	unsigned char *packet_data;
+	pcap_t* device_handle_i;
+	char error_buffer[PCAP_ERRBUF_SIZE];
+
+	if ((device_handle_i = pcap_open_offline("udp.pcap",	// File name 
+		error_buffer					// Error buffer
+		)) == NULL)
+	{
+		printf("\n Unable to open the file %s.\n", "udp.pcap");
+		return;
+	}
+
+
+	pcap_next_ex(device_handle_i, packet_header, (const u_char**)packet_data);
 }
