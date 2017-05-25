@@ -289,7 +289,7 @@ void send_packets()
 			ih->src_addr[i] = ih_tmp;
 		}
 
-		if (pcap_sendpacket(device_handle_out, packet_buffer[i], 4+sizeof(eh)+sizeof(uh)+sizeof(uh)) == -1)
+		if (pcap_sendpacket(device_handle_out, packet_buffer[i], 4+sizeof(eh)+sizeof(ih)+sizeof(uh)) == -1)
 		{
 			printf("Warning: The packet will not be sent.\n");
 		}
