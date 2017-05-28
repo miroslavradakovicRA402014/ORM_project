@@ -18,6 +18,7 @@ void create_ex_udp_packet(ex_udp_datagram **udp_d, unsigned char **packet_d);
 pcap_t* device_handle_in, *device_handle_out;
 static int packet_num = 0;
 ex_udp_datagram* packet_buffer[100];
+unsigned char* packet;
 
 int main()
 {
@@ -33,7 +34,7 @@ int main()
 	unsigned char* packet_data;
 
 	
-	char filter_exp[] = "ip src 192.168.0.20 and udp port 27015";
+	char filter_exp[] = "ip src 192.168.0.10 and udp port 27015";
 	struct bpf_program fcode;
 	
 	/**************************************************************/
@@ -196,58 +197,45 @@ void sort_packets()
 void send_packet(ex_udp_datagram *rec_packet)
 {
 	int i;
-	u_long *seq_num;
-	u_long tmp_seq_num;
-	unsigned char* packet;
-	
-	unsigned char eh_tmp;
-	unsigned char ih_tmp;
-
-	seq_num = (u_long*)rec_packet->seq_number;
-	tmp_seq_num = ntohs(*seq_num);
-	//printf("Send ack= %lu \n", (u_long)((*seq_num)));
-
 	int j;
+
 	ex_udp_datagram *udp_d;
 	create_ex_udp_packet(&udp_d, &packet);
+	udp_d = new ex_udp_datagram(packet);
 
-	udp_d->iph->length = 4 + sizeof(udp_header) + 20;
-	udp_d->uh->datagram_length = sizeof(udp_header) + 4;
-	*(udp_d->seq_number) = *seq_num;
-	udp_d->eh = rec_packet->eh;
-	udp_d->iph = rec_packet->iph;
-	udp_d->uh = rec_packet->uh;
-	udp_d->iph->ttl = 100;
+	udp_d->iph->length = htons(4 + 20 + sizeof(udp_header));
+	udp_d->uh->datagram_length = htons(sizeof(udp_header) + 4);
+	*(udp_d->seq_number) = *(rec_packet->seq_number);
+	udp_d->uh->dest_port = rec_packet->uh->src_port;
+	udp_d->uh->src_port = rec_packet->uh->dest_port;
+
+	udp_d->iph->ttl = htons(100);
 
         
 	for (j = 0; j < 6; j++)
 	{
-		eh_tmp = udp_d->eh->dest_address[j];
-		udp_d->eh->dest_address[j] = udp_d->eh->src_address[j];
-		udp_d->eh->src_address[j] = eh_tmp;
+		udp_d->eh->dest_address[j] = rec_packet->eh->src_address[j];
+		udp_d->eh->src_address[j] = rec_packet->eh->dest_address[j];
 	}
 
 	for (j = 0; j < 4; j++)
 	{
-		ih_tmp = udp_d->iph->dst_addr[j];
-		udp_d->iph->dst_addr[j] = udp_d->iph->src_addr[j];
-		udp_d->iph->src_addr[j] = ih_tmp;
+		udp_d->iph->dst_addr[j] = rec_packet->iph->src_addr[j];
+		udp_d->iph->src_addr[j] = rec_packet->iph->dst_addr[j];
 	}
 	
-	printf("Send ack= %lu \n", (u_long)((*seq_num)));
+	printf("Send ack= %lu \n", (u_long)(*(udp_d->seq_number)));
 
-	for (int i = 0; i < 1000; i++)
+	if (pcap_sendpacket(device_handle_in, packet, 4+ sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 	{
-		if (pcap_sendpacket(device_handle_in, packet, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
-		{
-			printf("Warning: The packet will not be sent.\n");
-		}
+		printf("Warning: The packet will not be sent.\n");
 	}
 }
 
 void create_ex_udp_packet(ex_udp_datagram **ex_udp_d, unsigned char **packet_data)
 {
 	struct pcap_pkthdr* packet_header;
+	unsigned char* packet_data1;
 	pcap_t* device_handle_i;
 	char error_buffer[PCAP_ERRBUF_SIZE];
 
@@ -260,6 +248,5 @@ void create_ex_udp_packet(ex_udp_datagram **ex_udp_d, unsigned char **packet_dat
 	}
 
 	pcap_next_ex(device_handle_i, &packet_header, (const u_char**)packet_data);
-
-	*ex_udp_d = new ex_udp_datagram(*packet_data);
+	//*ex_udp_d = new ex_udp_datagram(*packet_data);
 }
