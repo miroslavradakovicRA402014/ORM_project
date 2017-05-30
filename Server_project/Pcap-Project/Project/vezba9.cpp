@@ -10,6 +10,8 @@
 #include <pcap.h>
 #include "protocol_headers.h"
 
+using namespace std;
+
 void packet_handler(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
 void sort_packets();
 void send_packet(ex_udp_datagram* rec_packet);
@@ -34,7 +36,7 @@ int main()
 	unsigned char* packet_data;
 
 	
-	char filter_exp[] = "ip src 192.168.0.10 and udp port 27015";
+	char filter_exp[] = "ip src 192.168.0.20 and udp port 27015";
 	struct bpf_program fcode;
 	
 	/**************************************************************/
@@ -151,10 +153,8 @@ void packet_handler(struct pcap_pkthdr* packet_header,unsigned char* packet_data
 	int len = packet_header->len;
 
 	packet_num++;
-	
 	send_packet(rec_packet);
-
-	printf(" %d ", packet_num);
+	printf("Packet num = %d \n", packet_num);
 }
 
 void sort_packets() 
@@ -248,5 +248,4 @@ void create_ex_udp_packet(ex_udp_datagram **ex_udp_d, unsigned char **packet_dat
 	}
 
 	pcap_next_ex(device_handle_i, &packet_header, (const u_char**)packet_data);
-	//*ex_udp_d = new ex_udp_datagram(*packet_data);
 }
