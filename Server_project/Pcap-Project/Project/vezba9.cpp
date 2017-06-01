@@ -72,7 +72,7 @@ int main()
 	struct pcap_pkthdr* packet_header_eth;
 	unsigned char* packet_data_eth;
 	
-	char filter_exp[] = "ip src 192.168.0.20 and udp port 27015";
+	char filter_exp[] = "ip src 10.81.2.44 and udp port 27015";
 	struct bpf_program fcode;
 
 	/**************************************************************/
@@ -220,7 +220,7 @@ void wifi_thread_handle()
 
 		ex_udp_datagram *udp_d;
 
-		printf("WiFi handle \n");
+		//printf("WiFi handle \n");
 
 		{
 			struct pcap_pkthdr* packet_header;
@@ -261,19 +261,41 @@ void wifi_thread_handle()
 			udp_d->iph->src_addr[j] = packet_buffer_wifi[packet_num_wifi_read]->iph->dst_addr[j];
 		}
 
-		printf("Send ack= %lu \n", (u_long)(*(udp_d->seq_number)));
+		printf("Send ack from WiFi= %lu \n", (u_long)(*(udp_d->seq_number)));
 
 		if (pcap_sendpacket(device_handle_in_wifi, packet_wifi, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
 			printf("Warning: The packet will not be sent.\n");
 		}
 
-		packet_num_eth_read++;
-		printf("WiFi handle end\n");
+		packet_num_wifi_read++;
+		//printf("WiFi handle end\n");
 
 		//recv_wifi = (WiFiAdapterRECV)NO_WIFI;
 		//ph_wifi_cv.notify_one();
 	}
+}
+
+void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packet_data)
+{
+	//mutex mx;
+	//unique_lock<mutex> l(mx);
+	//while (recv_wifi == YES_WIFI)
+	//	ph_wifi_cv.wait(l);
+
+	ex_udp_datagram* rec_packet;
+	rec_packet = new ex_udp_datagram(packet_header, packet_data);
+
+	packet_buffer_wifi[packet_num_wifi_write] = rec_packet;
+	int len = packet_header->len;
+
+	packet_num_wifi_write++;
+
+	printf("WiFi packet num recived = %d \n", packet_num_wifi_write);
+
+	//recv_wifi = (WiFiAdapterRECV)YES_WIFI;
+	//wifi_cv.notify_one();
+
 }
 
 void eth_thread_handle()
@@ -297,7 +319,7 @@ void eth_thread_handle()
 
 		ex_udp_datagram *udp_d;
 
-		printf("Eth handle \n");
+		//printf("Eth handle \n");
 
 		{
 			struct pcap_pkthdr* packet_header;
@@ -338,7 +360,7 @@ void eth_thread_handle()
 			udp_d->iph->src_addr[j] = packet_buffer_eth[packet_num_eth_read]->iph->dst_addr[j];
 		}
 
-		printf("Send ack= %lu \n", (u_long)(*(udp_d->seq_number)));
+		printf("Send ack from Eth= %lu \n", (u_long)(*(udp_d->seq_number)));
 
 		if (pcap_sendpacket(device_handle_in_eth, packet_eth, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
@@ -346,7 +368,7 @@ void eth_thread_handle()
 		}
 
 		packet_num_eth_read++;
-		printf("Eth handle end \n");
+		//printf("Eth handle end \n");
 
 		//recv_eth = (ETHAdapterRECV)NO_ETH;
 		//ph_eth_cv.notify_one();
@@ -371,33 +393,12 @@ void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_
 
 	packet_num_eth_write++;
 
-	printf("Packet num = %d \n", packet_num_eth_write);
+	printf("Eth packet num recived= %d \n", packet_num_eth_write);
 
 	//recv_eth = (ETHAdapterRECV)YES_ETH;
 	//eth_cv.notify_one();
 }
 
-void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packet_data)
-{
-	//mutex mx;
-	//unique_lock<mutex> l(mx);
-	//while (recv_wifi == YES_WIFI)
-	//	ph_wifi_cv.wait(l);
-
-	ex_udp_datagram* rec_packet;
-	rec_packet = new ex_udp_datagram(packet_header, packet_data);
-
-	packet_buffer_wifi[packet_num_wifi_write] = rec_packet;
-	int len = packet_header->len;
-
-	packet_num_wifi_write++;
-
-	printf("Packet num = %d \n", packet_num_wifi_write);
-
-	//recv_wifi = (WiFiAdapterRECV)YES_WIFI;
-	//wifi_cv.notify_one();
-
-}
 /*
 void sort_packets() 
 {

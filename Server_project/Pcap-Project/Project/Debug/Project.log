@@ -2,7 +2,7 @@
 c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(63): warning C4101: 'sentBytes': unreferenced local variable
 c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(249): warning C4244: '=': conversion from 'u_short' to 'unsigned char', possible loss of data
 c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(218): warning C4101: 'i': unreferenced local variable
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(326): warning C4244: '=': conversion from 'u_short' to 'unsigned char', possible loss of data
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(295): warning C4101: 'i': unreferenced local variable
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(348): warning C4244: '=': conversion from 'u_short' to 'unsigned char', possible loss of data
+c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(317): warning C4101: 'i': unreferenced local variable
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
   Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
