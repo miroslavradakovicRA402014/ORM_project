@@ -12,49 +12,54 @@
 #include <mutex>
 #include <pcap.h>
 #include "protocol_headers.h"
-
 using namespace std;
 
 void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
 void packet_handler_eth(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
-//void sort_packets();
+void sort_packets(ex_udp_datagram* packet_buffer[], int buff_len);
+void merge_packets();
+void reconstruct_message();
 //void send_packet(ex_udp_datagram* rec_packet);
 //void create_ex_udp_packet(ex_udp_datagram **udp_d, unsigned char **packet_d);
 
 pcap_t* device_handle_in_wifi, *device_handle_in_eth;
-//static int packet_num = 0;
+static int packet_num = 0;
 static int packet_num_wifi_write = 0;
 static int packet_num_eth_write = 0;
 static int packet_num_wifi_read = 0;
 static int packet_num_eth_read = 0;
-ex_udp_datagram* packet_buffer_wifi[100];
-ex_udp_datagram* packet_buffer_eth[100];
+static int curr_size_eth = 0;
+static int curr_size_wifi = 0;
+static int size_eth = MAX_LEN;
+static int size_wifi = MAX_LEN;
+ex_udp_datagram* packet_buffer_wifi[1000];
+ex_udp_datagram* packet_buffer_eth[1000];
+ex_udp_datagram* packet_buffer[1000];
 unsigned char* packet_wifi;
 unsigned char* packet_eth;
+unsigned char* message;
+
+
 
 thread *wifi_cap_thread;
 thread *eth_cap_thread;
-/*
-enum WiFiAdapterRECV {YES_WIFI,NO_WIFI};
-enum ETHAdapterRECV  {YES_ETH,NO_ETH};
-*/
+thread *sniff_thread;
+
 void wifi_thread_handle();
 void eth_thread_handle();
+void catch_packets();
 
 condition_variable wifi_cv;
-//condition_variable ph_wifi_cv;
-
-
 condition_variable eth_cv;
-//condition_variable ph_eth_cv;
-
-/*
-WiFiAdapterRECV recv_wifi = NO_WIFI;
-ETHAdapterRECV recv_eth = NO_ETH;
-*/
 
 bool eth_wait = false;
 bool wifi_wait = false;
+
+struct pcap_pkthdr* packet_header_wifi;
+unsigned char* packet_data_wifi;
+
+struct pcap_pkthdr* packet_header_eth;
+unsigned char* packet_data_eth;
 
 int main()
 {
@@ -66,13 +71,7 @@ int main()
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
 
-	struct pcap_pkthdr* packet_header_wifi;
-	unsigned char* packet_data_wifi;
-
-	struct pcap_pkthdr* packet_header_eth;
-	unsigned char* packet_data_eth;
-	
-	char filter_exp[] = "ip src 10.81.2.44 and udp port 27015";
+	char filter_exp[] = "ip src 192.168.0.20 and udp port 27015";
 	struct bpf_program fcode;
 
 	/**************************************************************/
@@ -165,9 +164,11 @@ int main()
 	
 	wifi_cap_thread = new thread(wifi_thread_handle);
 	eth_cap_thread = new thread(eth_thread_handle);
+	sniff_thread = new thread(catch_packets);
 
 	/**************************************************************/	
 	//pcap_loop(device_handle_in, 0, packet_handler, NULL);
+	/*
 	while (1) 
 	{
 		if (pcap_next_ex(device_handle_in_wifi, &packet_header_wifi, (const u_char**)&packet_data_wifi) == 1)
@@ -187,11 +188,16 @@ int main()
 			}
 		}
 	}
+	*/
 	/**************************************************************/
-
 
 	wifi_cap_thread->detach();
 	eth_cap_thread->detach();
+	sniff_thread->join();
+
+	message = new unsigned char[size_eth + size_wifi + 1];
+
+	reconstruct_message();
 
 	// !!! IMPORTANT: remember to close the output adapter, otherwise there will be no guarantee that all the packets will be sent!
 	pcap_close(device_handle_in_wifi);
@@ -199,10 +205,41 @@ int main()
 
 	return 0;
 }
+
+void catch_packets() 
+{
+	printf("Sniff thread created\n");
+	while (1)
+	{
+		if (pcap_next_ex(device_handle_in_wifi, &packet_header_wifi, (const u_char**)&packet_data_wifi) == 1)
+		{
+			packet_num++;
+			packet_handler_wifi(packet_header_wifi, packet_data_wifi);
+			if (packet_num_wifi_read < packet_num_wifi_write && wifi_wait)
+			{
+				wifi_cv.notify_one();
+			}
+		}
+		else if (pcap_next_ex(device_handle_in_eth, &packet_header_eth, (const u_char**)&packet_data_eth) == 1)
+		{
+			packet_num++;
+			packet_handler_eth(packet_header_eth, packet_data_eth);
+			if (packet_num_eth_read < packet_num_eth_write && eth_wait)
+			{
+				wifi_cv.notify_one();
+			}
+		}		
+		if (curr_size_eth == size_eth && curr_size_wifi == size_wifi) 
+		{
+			break;
+		}
+	}
+}
+
 void wifi_thread_handle() 
 {
 	mutex mx;
-	printf("WiFi thread \n");
+	printf("WiFi thread created\n");
 	while (1)
 	{
 		unique_lock<mutex> l(mx);
@@ -219,6 +256,7 @@ void wifi_thread_handle()
 		int j;
 
 		ex_udp_datagram *udp_d;
+		u_long seq_num;
 
 		//printf("WiFi handle \n");
 
@@ -261,7 +299,19 @@ void wifi_thread_handle()
 			udp_d->iph->src_addr[j] = packet_buffer_wifi[packet_num_wifi_read]->iph->dst_addr[j];
 		}
 
-		printf("Send ack from WiFi= %lu \n", (u_long)(*(udp_d->seq_number)));
+		seq_num = (u_long)(ntohs(*(udp_d->seq_number)));
+
+		if (seq_num != 0) 
+		{
+			curr_size_wifi += sizeof(udp_d->data);
+		}
+		else
+		{
+			size_wifi = (int)(ntohs(*(packet_buffer_wifi[0]->data)));
+			printf("Wifi size = %d \n", size_wifi);
+		}
+
+		printf("Send ack from WiFi= %lu \n", seq_num);
 
 		if (pcap_sendpacket(device_handle_in_wifi, packet_wifi, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
@@ -270,38 +320,25 @@ void wifi_thread_handle()
 
 		packet_num_wifi_read++;
 		//printf("WiFi handle end\n");
-
-		//recv_wifi = (WiFiAdapterRECV)NO_WIFI;
-		//ph_wifi_cv.notify_one();
 	}
 }
-
+// Callback function invoked by libpcap/WinPcap for every incoming packet form WiFi
 void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packet_data)
 {
-	//mutex mx;
-	//unique_lock<mutex> l(mx);
-	//while (recv_wifi == YES_WIFI)
-	//	ph_wifi_cv.wait(l);
-
 	ex_udp_datagram* rec_packet;
 	rec_packet = new ex_udp_datagram(packet_header, packet_data);
 
 	packet_buffer_wifi[packet_num_wifi_write] = rec_packet;
-	int len = packet_header->len;
 
 	packet_num_wifi_write++;
 
 	printf("WiFi packet num recived = %d \n", packet_num_wifi_write);
-
-	//recv_wifi = (WiFiAdapterRECV)YES_WIFI;
-	//wifi_cv.notify_one();
-
 }
 
 void eth_thread_handle()
 {
 	mutex mx;
-	printf("Eth thread \n");
+	printf("Eth thread created\n");
 	while (1)
 	{
 		unique_lock<mutex> l(mx);
@@ -316,6 +353,7 @@ void eth_thread_handle()
 		//Send packet
 		int i;
 		int j;
+		u_long seq_num;
 
 		ex_udp_datagram *udp_d;
 
@@ -360,7 +398,19 @@ void eth_thread_handle()
 			udp_d->iph->src_addr[j] = packet_buffer_eth[packet_num_eth_read]->iph->dst_addr[j];
 		}
 
-		printf("Send ack from Eth= %lu \n", (u_long)(*(udp_d->seq_number)));
+		seq_num = (u_long)(ntohs(*(udp_d->seq_number)));
+
+		if (seq_num != 0)
+		{
+			curr_size_eth += sizeof(udp_d->data);
+		}
+		else 
+		{
+			size_eth = (int)(ntohs(*(packet_buffer_eth[0]->data)));
+			printf("Eth size = %d \n", size_eth);
+		}
+
+		printf("Send ack from Eth= %lu \n", seq_num);
 
 		if (pcap_sendpacket(device_handle_in_eth, packet_eth, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
@@ -369,66 +419,44 @@ void eth_thread_handle()
 
 		packet_num_eth_read++;
 		//printf("Eth handle end \n");
-
-		//recv_eth = (ETHAdapterRECV)NO_ETH;
-		//ph_eth_cv.notify_one();
 	}
 }
 
-
-
-// Callback function invoked by libpcap/WinPcap for every incoming packet
+// Callback function invoked by libpcap/WinPcap for every incoming packet form Eth
 void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_data)
 {
-	//mutex mx;
-	//unique_lock<mutex> l(mx);
-	//while (recv_eth == YES_ETH)
-	//	ph_eth_cv.wait(l);
-
 	ex_udp_datagram* rec_packet;
 	rec_packet = new ex_udp_datagram(packet_header,packet_data);
 	
 	packet_buffer_eth[packet_num_eth_write] = rec_packet;
-	int len = packet_header->len;
 
 	packet_num_eth_write++;
 
 	printf("Eth packet num recived= %d \n", packet_num_eth_write);
-
-	//recv_eth = (ETHAdapterRECV)YES_ETH;
-	//eth_cv.notify_one();
 }
 
-/*
-void sort_packets() 
+void sort_packets(ex_udp_datagram* packet_buffer[],int buff_len) 
 {
 	int i,j;
-	ethernet_header* eh;
-	ip_header* ih;
-	udp_header* uh;
-	unsigned char *data;
-	u_long seq_num;
 	u_long key,cmp;
 
-	for (i = 0; i < BUFF_LEN; i++) 
+	for (i = 1; i < buff_len; i++) 
 	{
 		{
-			u_long *data = (u_long*)((unsigned char*)packet_buffer[i]+ sizeof(ethernet_header) + 20 +sizeof(udp_header));
-			u_long key = (u_long)ntohs((*data));
+			u_long key = (u_long)(*(packet_buffer[i]->seq_number));
 		}
 		j = i - 1;
 		{
-			if (j != -1)
+			if (j != 0)
 			{
-				u_long *data = (u_long*)((unsigned char*)packet_buffer[j] + sizeof(ethernet_header) + 20 + sizeof(udp_header));
-				u_long cmp = (u_long)ntohs((*data));
+				u_long cmp = (u_long)(*(packet_buffer[j]->seq_number));
 			}
 			else 
 			{
 				u_long cmp = -1;
 			}
 		}
-		while (j >= -1 && cmp > key) 
+		while (j >= 0 && cmp > key) 
 		{
 			packet_buffer[j + 1] = packet_buffer[j];
 			j--;
@@ -436,7 +464,62 @@ void sort_packets()
 		packet_buffer[j + 1] = packet_buffer[i];
 	}
 }
-*/
+
+void reconstruct_message() 
+{
+	sort_packets(packet_buffer_wifi,packet_num_wifi_write);
+	sort_packets(packet_buffer_eth,packet_num_eth_write);
+	merge_packets();
+
+	int i,j,data_len,message_ind = 0;
+	unsigned char* data;
+	for (i = 1; i < packet_num; i++) 
+	{
+		data = (unsigned char*)packet_buffer[i]->data;
+		data_len = sizeof(data);
+		for (j = 0; j < data_len; j++,data++,message_ind++) 
+		{
+			message[message_ind] = (unsigned char)(*data);
+		}
+	}
+	message[message_ind] = '\0';
+}
+
+void merge_packets() 
+{
+	int i = 1, j = 1, k = 0;
+
+	while (i < packet_num_wifi_write && j < packet_num_eth_write) 
+	{
+		u_long eth_seq = (u_long)(*(packet_buffer_eth[j]->seq_number)), wifi_seq = (u_long)(*(packet_buffer_wifi[i]->seq_number));
+		if (eth_seq > wifi_seq)
+		{
+			packet_buffer[k] = packet_buffer_wifi[i];
+			i++;
+		} 
+		else 
+		{
+			packet_buffer[k] = packet_buffer_eth[j];
+			j++;
+		}
+		k++;
+	}
+	
+	while (i < packet_num_wifi_write) 
+	{
+		packet_buffer[k] = packet_buffer_wifi[i];
+		i++;
+		k++;
+	}
+
+	while (j < packet_num_eth_write)
+	{
+		packet_buffer[k] = packet_buffer_eth[j];
+		j++;
+		k++;
+	}
+}
+
 /*
 void send_packet(ex_udp_datagram *rec_packet)
 {
@@ -476,8 +559,6 @@ void send_packet(ex_udp_datagram *rec_packet)
 	}
 
 }
-*/
-/*
 void create_ex_udp_packet(ex_udp_datagram **ex_udp_d, unsigned char **packet_data)
 {
 	struct pcap_pkthdr* packet_header;

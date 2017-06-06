@@ -1,5 +1,6 @@
 /* PROTOCOL HEADERS */
 #define BUFF_LEN 10
+#define MAX_LEN  10000
 // Ethernet header
 
 typedef struct ethernet_header{
