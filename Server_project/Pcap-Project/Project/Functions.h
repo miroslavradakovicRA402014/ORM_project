@@ -6,7 +6,7 @@
 #include "protocol_headers.h"
 
 /* Reads generic udp packet from wireshark file. */
-void initiallize(struct pcap_pkthdr** packet_header, unsigned char** packet_data)
+void initialize(struct pcap_pkthdr** packet_header, unsigned char** packet_data)
 {
 	pcap_t* device_handle_i;
 	char error_buffer[PCAP_ERRBUF_SIZE];
@@ -23,7 +23,7 @@ void initiallize(struct pcap_pkthdr** packet_header, unsigned char** packet_data
 	pcap_next_ex(device_handle_i, packet_header, (const u_char**)packet_data);
 }
 
-void make_ack_packet(unsigned char **packet, unsigned char *udp_packet_data, struct pcap_pkthdr *udp_packet_header, unsigned short port_number)
+void make_ack_packet(unsigned char **packet, unsigned char *udp_packet_data, struct pcap_pkthdr *udp_packet_header, const unsigned short port_number)
 {
 	/* Help structures. */
 	ex_udp_datagram *udp_d = new ex_udp_datagram(udp_packet_header, udp_packet_data);
