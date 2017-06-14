@@ -45,15 +45,22 @@ bool wifi_wait = false;
 
 mutex packet_num_mutex;
 mutex packet_buff_mutex;
+mutex stdout_mutex;
 
-unsigned char client_eth_addr[6] = { 0x78, 0x0c, 0xb8, 0xf7, 0x71, 0xa0 };
+unsigned char client_wifi_mac_addr[6] = { 0x90, 0xcd, 0xb6, 0x2c, 0x40, 0x39 };
+unsigned char client_eth_mac_addr[6] = { 0x98, 0x40, 0xbb, 0x14, 0x59, 0x91 };
+unsigned char server_mac_addr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+
+//unsigned char client_eth_addr[6] = { 0x78, 0x0c, 0xb8, 0xf7, 0x71, 0xa0 };
 //unsigned char source_eth_addr[6] = { 0x00, 0xe0, 0x4c, 0x36, 0x33, 0xf6 };
-unsigned char server_eth_addr[6] = { 0x2c, 0xd0, 0x5a, 0x90, 0xba, 0x9a };
+//unsigned char server_eth_addr[6] = { 0x2c, 0xd0, 0x5a, 0x90, 0xba, 0x9a };
 //unsigned char dest_eth_addr[6] = { 0x7c, 0x05, 0x07, 0x24, 0xf8, 0x04 };
 
-unsigned char client_ip_addr[4] = { 192, 168, 0, 14 };
+unsigned char client_wifi_ip_addr[4] = { 192, 168, 0, 16 };
+unsigned char client_eth_ip_addr[4] = { 169, 254, 176, 102 };
 //unsigned char source_ip_addr[4] = { 169, 254, 176, 100 };
-unsigned char server_ip_addr[4] = { 192, 168, 0, 10 };
+unsigned char server_wifi_ip_addr[4] = { 192, 168, 0, 1 };
+unsigned char server_eth_ip_addr[4] = { 169, 254, 176, 100 };
 //unsigned char dest_ip_addr[4] = { 169, 254, 176, 101 };
 
 struct pcap_pkthdr* packet_header_wifi;
@@ -78,8 +85,10 @@ int main()
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
 
-	char filter_exp[] = "ip src 192.168.0.10 and udp port 27015";
+	char filter_exp2[] = "udp port 27015 and ip src 169.254.176.100";
+	char filter_exp[] = "udp port 27015 and ip src 192.168.0.1";
 	struct bpf_program fcode;
+	struct bpf_program fcode2;
 
 	/**************************************************************/
 	//Retrieve the device list on the local machine 
@@ -156,14 +165,21 @@ int main()
 			netmask = ((struct sockaddr_in *)(device[j]->addresses->netmask))->sin_addr.s_addr;
 	}
 	// Compile the filter    
-	if (pcap_compile(device_handle_in_wifi, &fcode, filter_exp, 1, netmask) < 0 || pcap_compile(device_handle_in_eth, &fcode, filter_exp, 1, netmask) < 0)
+	if (pcap_compile(device_handle_in_wifi, &fcode, filter_exp, 1, netmask) < 0 || pcap_compile(device_handle_in_eth, &fcode2, filter_exp2, 1, netmask) < 0)
 	{
 		printf("\n Unable to compile the packet filter. Check the syntax.\n");
 		return -1;
 	}
 
+	// Compile the filter    
+	/*if (pcap_compile(device_handle_in_wifi, &fcode, filter_exp2, 1, netmask) < 0 || pcap_compile(device_handle_in_eth, &fcode, filter_exp, 1, netmask) < 0)
+	{
+		printf("\n Unable to compile the packet filter. Check the syntax.\n");
+		return -1;
+	}*/
+
 	// Set the filter
-	if (pcap_setfilter(device_handle_in_wifi, &fcode) < 0 || pcap_setfilter(device_handle_in_eth, &fcode) < 0)
+	if (pcap_setfilter(device_handle_in_wifi, &fcode) < 0 || pcap_setfilter(device_handle_in_eth, &fcode2) < 0)
 	{
 		printf("\n Error setting the filter.\n");
 		return -1;
@@ -173,8 +189,8 @@ int main()
 	initialize(&packet_header_eth, &packet_data_eth);
 	make_ack_packet(&ack_packet_wifi, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
 	make_ack_packet(&ack_packet_eth, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
-	set_addresses(&ack_packet_wifi, 1, client_eth_addr, server_eth_addr, client_ip_addr, server_ip_addr);
-	set_addresses(&ack_packet_eth, 1, client_eth_addr, server_eth_addr, client_ip_addr, server_ip_addr);
+	set_addresses(&ack_packet_wifi, 1, client_wifi_mac_addr, server_mac_addr, client_wifi_ip_addr, server_wifi_ip_addr);
+	set_addresses(&ack_packet_eth, 1, client_eth_mac_addr, server_mac_addr, client_eth_ip_addr, server_eth_ip_addr);
 
 	rec_wifi_udp_d = new ex_udp_datagram(ack_packet_wifi);
 	rec_eth_udp_d = new ex_udp_datagram(ack_packet_eth);
@@ -182,8 +198,8 @@ int main()
 	rec_eth_udp_d->iph->checksum = 0;
 	rec_wifi_udp_d->iph->checksum = 0;
 
-	rec_wifi_udp_d->iph->checksum = ip_checksum(rec_wifi_udp_d->iph, rec_wifi_udp_d->iph->header_length * 4);
-	rec_eth_udp_d->iph->checksum = ip_checksum(rec_eth_udp_d->iph, rec_eth_udp_d->iph->header_length * 4);
+	rec_wifi_udp_d->iph->checksum = ip_checksum(rec_wifi_udp_d->iph, rec_wifi_udp_d->iph->header_length * 4)+1;
+	rec_eth_udp_d->iph->checksum = ip_checksum(rec_eth_udp_d->iph, rec_eth_udp_d->iph->header_length * 4)+1;
 	
 	wifi_cap_thread = new thread(wifi_thread_handle);
 	eth_cap_thread = new thread(eth_thread_handle);
@@ -216,6 +232,7 @@ void wifi_thread_handle()
 		{
 			/* MUTEX */
 			packet_handler_wifi(packet_header_wifi, packet_data_wifi);
+			Sleep(1000);
 		}
 	}
 }
@@ -227,27 +244,34 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 
 	u_long seq_num = (u_long)ntohl(*((u_long*)rec_packet->seq_number));
 
+	stdout_mutex.lock();
+	printf("wifi Seq: %d\n", seq_num);
+	stdout_mutex.unlock();
+
 	if (seq_num == 0)
 	{
 		//total_size = ntohl(*(rec_packet->data));
 		unsigned int* gepek = (unsigned int*)(rec_packet->data);
-		total_size = ntohl(*gepek);
-		printf("Total size :\n",total_size);
+		//total_size = ntohl(*gepek);
+		//printf("Total size :\n",total_size);
 
 		*(rec_wifi_udp_d->seq_number) = *(rec_packet->seq_number);
 
 		packet_buff_mutex.lock();
 		if (packet_buffer == NULL)
 		{
+			total_size = ntohl(*gepek);
 			packet_buffer = new unsigned char*[total_size];
+			for (int i = 0; i < total_size; i++)
+				packet_buffer[i] = NULL;
 		}
-		for (int i = 0; i < total_size; i++)
-			packet_buffer[i] = NULL;
 		packet_buff_mutex.unlock();
+
+
 
 		if (pcap_sendpacket(device_handle_in_wifi, ack_packet_wifi, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			printf("Warning: The packet will not be sent.\n");
+			//printf("Warning: The packet will not be sent.\n");
 		}
 	}
 	else
@@ -270,7 +294,7 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 
 		if (pcap_sendpacket(device_handle_in_wifi, ack_packet_wifi, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			printf("Warning: The packet will not be sent.\n");
+			//printf("Warning: The packet will not be sent.\n");
 		}
 	}
 }
@@ -290,6 +314,7 @@ void eth_thread_handle()
 		if (pcap_next_ex(device_handle_in_eth, &packet_header_eth, (const u_char**)&packet_data_eth) == 1)
 		{
 			packet_handler_eth(packet_header_eth, packet_data_eth);
+			Sleep(1000);
 		}
 	}
 }
@@ -302,27 +327,33 @@ void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_
 
 	u_long seq_num = (u_long)ntohl(*((u_long*)rec_packet->seq_number));
 
+	stdout_mutex.lock();
+	printf("eth: Seq: %d\n", seq_num);
+	stdout_mutex.unlock();
+
 	if (seq_num == 0)
 	{
 		//total_size = ntohl(*(rec_packet->data));
 		unsigned int* data_size = (unsigned int*)(rec_packet->data);
-		total_size = ntohl(*data_size);
-		printf("Total size :\n", total_size);
+		
+		//printf("Total size :\n", total_size);
 
 		*(rec_eth_udp_d->seq_number) = *(rec_packet->seq_number);
 
 		packet_buff_mutex.lock();
 		if (packet_buffer == NULL)
 		{
+			total_size = ntohl(*data_size);
 			packet_buffer = new unsigned char*[total_size];
+			for (int i = 0; i < total_size; i++)
+				packet_buffer[i] = NULL;
 		}
-		for (int i = 0; i < total_size; i++)
-			packet_buffer[i] = NULL;
 		packet_buff_mutex.unlock();
+
 
 		if (pcap_sendpacket(device_handle_in_eth, ack_packet_eth, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			printf("Warning: The packet will not be sent.\n");
+			//printf("Warning: The packet will not be sent.\n");
 		}
 	}
 	else
@@ -345,17 +376,20 @@ void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_
 
 		if (pcap_sendpacket(device_handle_in_eth, ack_packet_eth, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			printf("Warning: The packet will not be sent.\n");
+			//printf("Warning: The packet will not be sent.\n");
 		}
 	}
 }
 
 void reconstruct_message() 
 {
+	stdout_mutex.lock();
 	for (int i = 0; i < (total_size-1); i++)
 		for(int j = 0; j < 10; j++)
 			printf("%c", packet_buffer[i][j]);
 	for (int j = 0; j < last_packet_size; j++)
 		printf("%c", packet_buffer[total_size-1][j]);
+	getchar();
+	stdout_mutex.unlock();
 }
 
