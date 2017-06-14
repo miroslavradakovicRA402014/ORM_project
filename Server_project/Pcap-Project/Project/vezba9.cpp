@@ -211,7 +211,7 @@ void catch_packets()
 	{
 		if (pcap_next_ex(device_handle_in_wifi, &packet_header_wifi, (const u_char**)&packet_data_wifi) == 1)
 		{
-			packet_num++;
+			//packet_num++;
 			packet_handler_wifi(packet_header_wifi, packet_data_wifi);
 			if (packet_num_wifi_read < packet_num_wifi_write && wifi_wait)
 			{
@@ -220,7 +220,7 @@ void catch_packets()
 		}
 		else if (pcap_next_ex(device_handle_in_eth, &packet_header_eth, (const u_char**)&packet_data_eth) == 1)
 		{
-			packet_num++;
+			//packet_num++;
 			packet_handler_eth(packet_header_eth, packet_data_eth);
 			if (packet_num_eth_read < packet_num_eth_write && eth_wait)
 			{
@@ -228,7 +228,7 @@ void catch_packets()
 			}
 		}		
 
-		if (total_size == packet_num-1) 
+		if (total_size == packet_num) 
 		{
 			break;
 		}
@@ -298,7 +298,7 @@ void wifi_thread_handle()
 			udp_d->iph->src_addr[j] = packet_buffer_wifi[packet_num_wifi_read]->iph->dst_addr[j];
 		}*/
 
-		seq_num = (u_long)ntohl(*(udp_d->seq_number));
+		seq_num = (u_long)ntohl(*(rec_wifi_udp_d->seq_number));
 
 		printf("Send ack from WiFi= %lu \n", seq_num);
 
@@ -338,15 +338,19 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 	}
 	else
 	{
-		packet_buffer_wifi[packet_num_wifi_write] = rec_packet;
-		for (int i = 0; i < 10; i++)
-		{
-			printf("\nWIFIPACKET: %c\n", packet_buffer_wifi[packet_num_wifi_write]->data[i]);
-		}
-		packet_num_wifi_write++;
-		printf("WiFi packet num recived = %d \n", packet_num_wifi_write);
+			packet_buffer_wifi[packet_num_wifi_write] = rec_packet;
+			for (int i = 0; i < 10; i++)
+			{
+				printf("\nWIFIPACKET: %c\n", packet_buffer_wifi[packet_num_wifi_write]->data[i]);
+			}
+			packet_num_wifi_write++;
+			printf("WiFi packet num recived = %d \n", packet_num_wifi_write);
 	}
-	packet_num++;
+
+	if (packet_num > seq_num)
+	{
+		packet_num++;
+	}
 }
 
 void eth_thread_handle()
@@ -463,19 +467,15 @@ void sort_packets(ex_udp_datagram* packet_buffer[],int buff_len)
 
 	for (i = 1; i < buff_len; i++) 
 	{
-		{
-			u_long key = (u_long)ntohl((*(packet_buffer[i]->seq_number)));
-		}
+		key = (u_long)ntohl((*(packet_buffer[i]->seq_number)));
 		j = i - 1;
+		if (j != 0)
 		{
-			if (j != 0)
-			{
-				u_long cmp = (u_long)ntohl((*(packet_buffer[j]->seq_number)));
-			}
-			else 
-			{
-				u_long cmp = -1;
-			}
+			cmp = (u_long)ntohl((*(packet_buffer[j]->seq_number)));
+		}
+		else 
+		{
+			cmp = -1;
 		}
 		while (j >= 0 && cmp > key) 
 		{
