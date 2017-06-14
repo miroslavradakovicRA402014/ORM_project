@@ -28,6 +28,7 @@ ex_udp_datagram* packet_buffer_eth[MAX_LEN];
 unsigned char* packet_wifi;
 unsigned char* packet_eth;
 unsigned char* message;
+FILE* fp;
 
 
 thread *wifi_cap_thread;
@@ -56,10 +57,10 @@ unsigned char server_mac_addr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 //unsigned char server_eth_addr[6] = { 0x2c, 0xd0, 0x5a, 0x90, 0xba, 0x9a };
 //unsigned char dest_eth_addr[6] = { 0x7c, 0x05, 0x07, 0x24, 0xf8, 0x04 };
 
-unsigned char client_wifi_ip_addr[4] = { 192, 168, 0, 16 };
+unsigned char client_wifi_ip_addr[4] = { 192, 168, 0, 15 };
 unsigned char client_eth_ip_addr[4] = { 169, 254, 176, 102 };
 //unsigned char source_ip_addr[4] = { 169, 254, 176, 100 };
-unsigned char server_wifi_ip_addr[4] = { 192, 168, 0, 1 };
+unsigned char server_wifi_ip_addr[4] = { 192, 168, 0, 14 };
 unsigned char server_eth_ip_addr[4] = { 169, 254, 176, 100 };
 //unsigned char dest_ip_addr[4] = { 169, 254, 176, 101 };
 
@@ -85,8 +86,8 @@ int main()
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
 
-	char filter_exp2[] = "udp port 27015 and ip src 169.254.176.100";
-	char filter_exp[] = "udp port 27015 and ip src 192.168.0.1";
+	char filter_exp2[] ="udp port 27015 and ip dst 169.254.176.102";
+	char filter_exp[] = "udp port 27015 and ip dst 192.168.0.15";
 	struct bpf_program fcode;
 	struct bpf_program fcode2;
 
@@ -185,6 +186,7 @@ int main()
 		return -1;
 	}
 
+	fp = file_open("output.png","wb");
 	initialize(&packet_header_wifi, &packet_data_wifi);
 	initialize(&packet_header_eth, &packet_data_eth);
 	make_ack_packet(&ack_packet_wifi, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
@@ -209,6 +211,7 @@ int main()
 	
 	reconstruct_message();
 
+	close_file(fp);
 	// !!! IMPORTANT: remember to close the output adapter, otherwise there will be no guarantee that all the packets will be sent!
 	pcap_close(device_handle_in_wifi);
 	pcap_close(device_handle_in_eth);
@@ -232,7 +235,7 @@ void wifi_thread_handle()
 		{
 			/* MUTEX */
 			packet_handler_wifi(packet_header_wifi, packet_data_wifi);
-			Sleep(1000);
+			//Sleep(1000);
 		}
 	}
 }
@@ -284,6 +287,7 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 			packet_num_mutex.unlock();
 			packet_buffer[seq_num - 1] = new unsigned char[ntohs(rec_packet->uh->datagram_length) - sizeof(udp_header) - 4];
 			memcpy(packet_buffer[seq_num - 1], rec_packet->data, ntohs(rec_packet->uh->datagram_length) - sizeof(udp_header)-4);
+
 		}
 		packet_buff_mutex.unlock();
 
@@ -314,7 +318,7 @@ void eth_thread_handle()
 		if (pcap_next_ex(device_handle_in_eth, &packet_header_eth, (const u_char**)&packet_data_eth) == 1)
 		{
 			packet_handler_eth(packet_header_eth, packet_data_eth);
-			Sleep(1000);
+			//Sleep(1000);
 		}
 	}
 }
@@ -383,13 +387,9 @@ void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_
 
 void reconstruct_message() 
 {
-	stdout_mutex.lock();
 	for (int i = 0; i < (total_size-1); i++)
-		for(int j = 0; j < 10; j++)
-			printf("%c", packet_buffer[i][j]);
-	for (int j = 0; j < last_packet_size; j++)
-		printf("%c", packet_buffer[total_size-1][j]);
+		fwrite(packet_buffer[i], sizeof(unsigned char), 1000, fp);
+	fwrite(packet_buffer[total_size-1], sizeof(unsigned char), last_packet_size, fp);
 	getchar();
-	stdout_mutex.unlock();
 }
 

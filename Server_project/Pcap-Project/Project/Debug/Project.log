@@ -1,10 +1,9 @@
 ﻿  vezba9.cpp
 f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\functions.h(54): warning C4018: '<': signed/unsigned mismatch
 f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\functions.h(94): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
-f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(82): warning C4101: 'sentBytes': unreferenced local variable
-f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(265): warning C4018: '<': signed/unsigned mismatch
-f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(348): warning C4018: '<': signed/unsigned mismatch
-f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(387): warning C4018: '<': signed/unsigned mismatch
+f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(83): warning C4101: 'sentBytes': unreferenced local variable
+f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(268): warning C4018: '<': signed/unsigned mismatch
+f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(352): warning C4018: '<': signed/unsigned mismatch
 f:\projekti_2017\orm2_projekat\projekat_prijemna_strana\orm_project\server_project\pcap-project\project\vezba9.cpp(390): warning C4018: '<': signed/unsigned mismatch
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
   Project.vcxproj -> F:\Projekti_2017\ORM2_projekat\projekat_prijemna_strana\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
