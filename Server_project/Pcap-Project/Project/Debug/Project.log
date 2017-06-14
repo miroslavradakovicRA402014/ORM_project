@@ -1,17 +1,16 @@
 ﻿  vezba9.cpp
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\functions.h(54): warning C4018: '<': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\functions.h(94): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(74): warning C4101: 'sentBytes': unreferenced local variable
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(257): warning C4101: 'udp_d': unreferenced local variable
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(255): warning C4101: 'j': unreferenced local variable
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(254): warning C4101: 'i': unreferenced local variable
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(350): warning C4018: '>': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(329): warning C4474: 'printf' : too many arguments passed for format string
-  c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(329): note: placeholders and their parameters expect 0 variadic arguments, but 1 were provided
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(404): warning C4244: '=': conversion from 'u_short' to 'unsigned char', possible loss of data
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(372): warning C4101: 'i': unreferenced local variable
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(447): warning C4474: 'printf' : too many arguments passed for format string
-  c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(447): note: placeholders and their parameters expect 0 variadic arguments, but 1 were provided
-c:\users\miroslav\desktop\orm_project\server_project\pcap-project\project\vezba9.cpp(497): warning C4018: '<': signed/unsigned mismatch
+d:\orm_server\orm_project\server_project\pcap-project\project\functions.h(54): warning C4018: '<': signed/unsigned mismatch
+d:\orm_server\orm_project\server_project\pcap-project\project\functions.h(94): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(78): warning C4101: 'sentBytes': unreferenced local variable
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(326): warning C4018: '<': signed/unsigned mismatch
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(317): warning C4474: 'printf' : too many arguments passed for format string
+  d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(317): note: placeholders and their parameters expect 0 variadic arguments, but 1 were provided
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(418): warning C4244: '=': conversion from 'u_short' to 'unsigned char', possible loss of data
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(386): warning C4101: 'i': unreferenced local variable
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(461): warning C4474: 'printf' : too many arguments passed for format string
+  d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(461): note: placeholders and their parameters expect 0 variadic arguments, but 1 were provided
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(504): warning C4018: '<': signed/unsigned mismatch
+d:\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(507): warning C4018: '<': signed/unsigned mismatch
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
-  Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
+  Project.vcxproj -> D:\ORM_Server\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
+  Project.vcxproj -> .\Debug\Project.pdb (Full PDB)
