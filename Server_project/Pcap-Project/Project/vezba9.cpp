@@ -10,43 +10,37 @@
 #include "Functions.h"
 using namespace std;
 
+// Packet handlers for captured packets on wifi adapter
 void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
+// Packet handlers for captured packets on ethernet adapter
 void packet_handler_eth(struct pcap_pkthdr* packet_header, unsigned char* packet_data);
+//Recounstruct message sent from client
 void reconstruct_message();
 
 pcap_t* device_handle_in_wifi, *device_handle_in_eth;
 static int packet_num = 0;
-unsigned int last_packet_size;
-static int packet_num_wifi_write = 0;
-static int packet_num_eth_write = 0;
-static int packet_num_wifi_read = 0;
-static int packet_num_eth_read = 0;
+unsigned int last_packet_size; //Size of last packet
 static unsigned int total_size = MAX_LEN;
 unsigned char** packet_buffer;
-ex_udp_datagram* packet_buffer_eth[MAX_LEN];
 unsigned char* packet_wifi;
 unsigned char* packet_eth;
-unsigned char* message;
 
 FILE* fp;
 
+//Threads form ETH and WiFi adapters
 thread *wifi_cap_thread;
 thread *eth_cap_thread;
-thread *sniff_thread;
 
+//Thread handlers
 void wifi_thread_handle();
 void eth_thread_handle();
 
-condition_variable wifi_cv;
-condition_variable eth_cv;
-
-bool eth_wait = false;
-bool wifi_wait = false;
-
+//Mutexes protect packet_buffer and packet_num and stdout
 mutex packet_num_mutex;
 mutex packet_buff_mutex;
 mutex stdout_mutex;
 
+//MAC and IP adresses from client and server adapters
 unsigned char client_wifi_mac_addr[6] = { 0x90, 0xcd, 0xb6, 0x2c, 0x40, 0x39 };
 unsigned char client_eth_mac_addr[6] = { 0x98, 0x40, 0xbb, 0x14, 0x59, 0x91 };
 unsigned char server_mac_addr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
@@ -57,18 +51,22 @@ unsigned char client_eth_ip_addr[4] = { 169, 254, 176, 102 };
 unsigned char server_wifi_ip_addr[4] = { 192, 168, 0, 17 };
 unsigned char server_eth_ip_addr[4] = { 169, 254, 176, 100 };
 
+//Packet headers
 struct pcap_pkthdr* packet_header_wifi;
 unsigned char* packet_data_wifi;
 
 struct pcap_pkthdr* packet_header_eth;
 unsigned char* packet_data_eth;
 
+//Ack packets which will be sent to client
 unsigned char *ack_packet_wifi;
 unsigned char *ack_packet_eth;
 
+//Recived packets form clients
 ex_udp_datagram *rec_wifi_udp_d;
 ex_udp_datagram *rec_eth_udp_d;
 
+//Packet size 
 const int PACKET_SIZE = 1400;
 
 int main()
@@ -80,7 +78,7 @@ int main()
 	pcap_if_t* device[2];
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
-
+	//filter expression 
 	char filter_exp2[] = "udp port 27015 and ip dst 169.254.176.102";		//port and eth ip
 	char filter_exp[] = "udp port 27015 and ip dst 192.168.0.16";			//port and wifi ip
 	struct bpf_program fcode;
@@ -114,7 +112,7 @@ int main()
 
 		//printf("Enter the output interface \n");
 		// Print the list
-		/*if (j == 0)
+		if (j == 0)
 		{
 			printf("Enter Wi-Fi interface number (1-%d):", i);
 			scanf("%d", &device_number[j]);
@@ -123,11 +121,12 @@ int main()
 		{
 			printf("Enter Ethernet interface number (1-%d):", i);
 			scanf("%d", &device_number[j]);
-		}*/
+		}
 
+		/*
 		printf("Enter Ethernet interface number (1-%d):", i);
 		scanf("%d", &device_number[j]);
-
+		*/
 		if (device_number[j] < 1 || device_number[j] > i)
 		{
 			printf("\nInterface number out of range.\n");
@@ -194,30 +193,44 @@ int main()
 		return -1;
 	}
 	
+	// Read generic udp packet and read raw data file.
 	initialize(&packet_header_wifi, &packet_data_wifi);
 	initialize(&packet_header_eth, &packet_data_eth);
-	
+	//Make correct ack packets
 	make_ack_packet(&ack_packet_wifi, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
 	make_ack_packet(&ack_packet_eth, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
-	
+	//Set source and destination address
 	set_addresses(&ack_packet_wifi, 1, client_wifi_mac_addr, server_mac_addr, client_wifi_ip_addr, server_wifi_ip_addr);
 	set_addresses(&ack_packet_eth, 1, client_eth_mac_addr, server_mac_addr, client_eth_ip_addr, server_eth_ip_addr);
 
+	//Create datagram from ack packets
 	rec_wifi_udp_d = new ex_udp_datagram(ack_packet_wifi);
 	rec_eth_udp_d = new ex_udp_datagram(ack_packet_eth);
 
+	//Initialize checksum
 	rec_eth_udp_d->iph->checksum = 0;
 	rec_wifi_udp_d->iph->checksum = 0;
 
+	//Calculate ip checksum
 	rec_wifi_udp_d->iph->checksum = ip_checksum(rec_wifi_udp_d->iph, rec_wifi_udp_d->iph->header_length * 4);
 	rec_eth_udp_d->iph->checksum = ip_checksum(rec_eth_udp_d->iph, rec_eth_udp_d->iph->header_length * 4);
+
 	
+	//Initialize checksum
+	rec_eth_udp_d->uh->checksum = 0;
+	rec_wifi_udp_d->uh->checksum = 0;
+	//Calculate udp checksum
+	rec_wifi_udp_d->uh->checksum = udp_checksum(rec_wifi_udp_d->uh, 8, rec_wifi_udp_d->iph->src_addr, rec_wifi_udp_d->iph->dst_addr);
+	rec_eth_udp_d->uh->checksum = udp_checksum(rec_eth_udp_d->uh, 8, rec_eth_udp_d->iph->src_addr, rec_eth_udp_d->iph->dst_addr);
+
+	//Create capture threads for adapters
 	wifi_cap_thread = new thread(wifi_thread_handle);
 	eth_cap_thread = new thread(eth_thread_handle);
 
 	wifi_cap_thread->join();
 	eth_cap_thread->join();
 	
+	//Recounstruct message and print to output file
 	reconstruct_message();
 
 	fclose(fp);
@@ -227,19 +240,20 @@ int main()
 
 	return 0;
 }
-
+//WiFi thread handle 
 void wifi_thread_handle() 
 {
 	while(1)
 	{
 		packet_num_mutex.lock();
+		//Check for last datagram
 		if (packet_num == total_size)
 		{
 			packet_num_mutex.unlock();
 			break;
 		}
 		packet_num_mutex.unlock();
-
+		//Catch datagram
 		if (pcap_next_ex(device_handle_in_wifi, &packet_header_wifi, (const u_char**)&packet_data_wifi) == 1)
 		{
 			packet_handler_wifi(packet_header_wifi, packet_data_wifi);
@@ -251,76 +265,78 @@ void wifi_thread_handle()
 void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packet_data)
 {
 	ex_udp_datagram* recv_packet;
+	//Make new datagram form recived datagram
 	recv_packet = new ex_udp_datagram(packet_header, packet_data);
-
+	//Get sequence number from datagram 
 	u_long seq_num = (u_long)ntohl(*((u_long*)recv_packet->seq_number));
 
 	stdout_mutex.lock();
 	printf("Wi-Fi_Seq: %d\n", seq_num);
 	stdout_mutex.unlock();
-
+	//First datagram?
 	if (seq_num == 0)
 	{
-		//total_size = ntohl(*(rec_packet->data));
 		unsigned int* data_size = (unsigned int*)(recv_packet->data);
-		//total_size = ntohl(*gepek);
-		//printf("Total size :\n",total_size);
-
 		*(rec_wifi_udp_d->seq_number) = *(recv_packet->seq_number);
 
 		packet_buff_mutex.lock();
+		//Allocate memory and initialzie packet buffer
 		if (packet_buffer == NULL)
 		{
+			//Get total packet size
 			total_size = ntohl(*data_size);
 			packet_buffer = new unsigned char*[total_size];
 			for (int i = 0; i < total_size; i++)
 				packet_buffer[i] = NULL;
 		}
 		packet_buff_mutex.unlock();
-
+		//Send ack datagram for first datagram
 		if (pcap_sendpacket(device_handle_in_wifi, ack_packet_wifi, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			//printf("Warning: The packet will not be sent.\n");
+			printf("Warning: The packet will not be sent.\n");
 		}
 	}
 	else
 	{
 		packet_buff_mutex.lock();
+		//Datagram is already recived?
 		if (packet_buffer[seq_num - 1] == NULL)
 		{
 			packet_num_mutex.lock();
 			packet_num++;
 			packet_num_mutex.unlock();
+			//Allocate memory for racived datagram
 			packet_buffer[seq_num - 1] = new unsigned char[ntohs(recv_packet->uh->datagram_length) - sizeof(udp_header) - 4];
 			memcpy(packet_buffer[seq_num - 1], recv_packet->data, ntohs(recv_packet->uh->datagram_length) - sizeof(udp_header)-4);
 
 		}
 		packet_buff_mutex.unlock();
-
+		//Last datagram?
 		if (seq_num == total_size)
 			last_packet_size = ntohs(recv_packet->uh->datagram_length) - sizeof(udp_header) - 4;
-
+		//Set ack num for datagram
 		*(rec_wifi_udp_d->seq_number) = htonl(seq_num);
-
+		//Send ack datagram
 		if (pcap_sendpacket(device_handle_in_wifi, ack_packet_wifi, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			//printf("Warning: The packet will not be sent.\n");
+			printf("Warning: The packet will not be sent.\n");
 		}
 	}
 }
-
+//Eth thread handle 
 void eth_thread_handle()
 {
 	while (1)
 	{
 		packet_num_mutex.lock();
+		//Check for last datagram
 		if (packet_num == total_size)
 		{
 			packet_num_mutex.unlock();
 			break;
 		}
 		packet_num_mutex.unlock();
-
+		//Catch datagram
 		if (pcap_next_ex(device_handle_in_eth, &packet_header_eth, (const u_char**)&packet_data_eth) == 1)
 		{
 			packet_handler_eth(packet_header_eth, packet_data_eth);
@@ -332,66 +348,67 @@ void eth_thread_handle()
 void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_data)
 {
 	ex_udp_datagram* recv_packet;
+	//Make new datagram form recived datagram
 	recv_packet = new ex_udp_datagram(packet_header, packet_data);
-
+	//Get sequence number from datagram 	
 	u_long seq_num = (u_long)ntohl(*((u_long*)recv_packet->seq_number));
 
 	stdout_mutex.lock();
 	printf("Eth_Seq: %d\n", seq_num);
 	stdout_mutex.unlock();
-
+	//First datagram?
 	if (seq_num == 0)
 	{
-		//total_size = ntohl(*(rec_packet->data));
-		unsigned int* data_size = (unsigned int*)(recv_packet->data);
-		
-		//printf("Total size :\n", total_size);
-
+		unsigned int* data_size = (unsigned int*)(recv_packet->data);	
 		*(rec_eth_udp_d->seq_number) = *(recv_packet->seq_number);
 
 		packet_buff_mutex.lock();
+		//Allocate memory and initialzie packet buffer
 		if (packet_buffer == NULL)
 		{
+			//Get total packet size
 			total_size = ntohl(*data_size);
 			packet_buffer = new unsigned char*[total_size];
 			for (int i = 0; i < total_size; i++)
 				packet_buffer[i] = NULL;
 		}
 		packet_buff_mutex.unlock();
-
-
+		//Send ack datagram for first datagram
 		if (pcap_sendpacket(device_handle_in_eth, ack_packet_eth, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			//printf("Warning: The packet will not be sent.\n");
+			printf("Warning: The packet will not be sent.\n");
 		}
 	}
 	else
 	{
 		packet_buff_mutex.lock();
+		//Datagram is already recived?
 		if (packet_buffer[seq_num - 1] == NULL)
 		{
 			packet_num_mutex.lock();
 			packet_num++;
 			packet_num_mutex.unlock();
+			//Allocate memory for racived datagram
 			packet_buffer[seq_num - 1] = new unsigned char[ntohs(recv_packet->uh->datagram_length) - sizeof(udp_header) - 4];
 			memcpy(packet_buffer[seq_num - 1], recv_packet->data, ntohs(recv_packet->uh->datagram_length) - sizeof(udp_header) - 4);
 		}
 		packet_buff_mutex.unlock();
-
+		//Last datagram?
 		if (seq_num == total_size)
 			last_packet_size = ntohs(recv_packet->uh->datagram_length) - sizeof(udp_header) - 4;
-
+		//Set ack num for datagram
 		*(rec_eth_udp_d->seq_number) = htonl(seq_num);
-
+		//Send ack datagram
 		if (pcap_sendpacket(device_handle_in_eth, ack_packet_eth, 4 + sizeof(ethernet_header) + 20 + sizeof(udp_header)) == -1)
 		{
-			//printf("Warning: The packet will not be sent.\n");
+			printf("Warning: The packet will not be sent.\n");
 		}
 	}
 }
 
 void reconstruct_message() 
 {
+	//Write datagrams from buffers to file
 	for (int i = 0; i < (total_size-1); i++)
 		fwrite(packet_buffer[i], sizeof(unsigned char), PACKET_SIZE, fp);
 	fwrite(packet_buffer[total_size-1], sizeof(unsigned char), last_packet_size, fp);

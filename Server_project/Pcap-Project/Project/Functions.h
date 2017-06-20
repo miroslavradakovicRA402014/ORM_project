@@ -93,3 +93,35 @@ uint16_t ip_checksum(const void *buf, size_t hdr_len)
 
 	return(~sum);
 }
+//! \brief Calculate the UDP header checksum.
+//! \param buf The UDP header content.
+//! \param hdr_len The UDP header length.
+//! \return The result of the checksum.
+uint16_t udp_checksum(const void *buff, size_t hdr_len, unsigned char* src_addr, unsigned char* dest_addr)
+{
+	const uint16_t *buf = (const uint16_t *)buff;
+    uint16_t *ip_src = (uint16_t *)src_addr, *ip_dst = (uint16_t *)dest_addr;
+    uint32_t sum;
+    size_t length = hdr_len;
+                                         
+    sum = 0;
+    while (hdr_len > 1)
+    {
+        sum += *buf++;
+           if (sum & 0x80000000)
+              sum = (sum & 0xFFFF) + (sum >> 16);
+        hdr_len -= 2;
+   }
+   if (hdr_len & 1)
+      sum += *((uint8_t *)buf);                                      
+   sum += *ip_src;
+   sum += *(ip_dst++);
+   sum += *ip_dst;
+
+   sum += htons(IPPROTO_UDP);
+   sum += htons(length);
+
+   while (sum >> 16)
+       sum = (sum & 0xFFFF) + (sum >> 16);
+   return ((uint16_t)(~sum));
+}

@@ -1,10 +1,10 @@
 ﻿  vezba9.cpp
-f:\projekti_2017\orm2_projekat\zavrseno\strana za prijem\orm_project\server_project\pcap-project\project\functions.h(54): warning C4018: '<': signed/unsigned mismatch
-f:\projekti_2017\orm2_projekat\zavrseno\strana za prijem\orm_project\server_project\pcap-project\project\functions.h(94): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
-f:\projekti_2017\orm2_projekat\zavrseno\strana za prijem\orm_project\server_project\pcap-project\project\vezba9.cpp(78): warning C4101: 'sentBytes': unreferenced local variable
-f:\projekti_2017\orm2_projekat\zavrseno\strana za prijem\orm_project\server_project\pcap-project\project\vezba9.cpp(276): warning C4018: '<': signed/unsigned mismatch
-f:\projekti_2017\orm2_projekat\zavrseno\strana za prijem\orm_project\server_project\pcap-project\project\vezba9.cpp(357): warning C4018: '<': signed/unsigned mismatch
-f:\projekti_2017\orm2_projekat\zavrseno\strana za prijem\orm_project\server_project\pcap-project\project\vezba9.cpp(395): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(54): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(94): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(117): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(75): warning C4101: 'sentBytes': unreferenced local variable
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(288): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(371): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(411): warning C4018: '<': signed/unsigned mismatch
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
-  Project.vcxproj -> F:\Projekti_2017\ORM2_projekat\Zavrseno\strana za prijem\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
-  Project.vcxproj -> .\Debug\Project.pdb (Full PDB)
+  Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM_server\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
