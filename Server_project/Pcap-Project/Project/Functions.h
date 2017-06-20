@@ -93,19 +93,3 @@ uint16_t ip_checksum(const void *buf, size_t hdr_len)
 
 	return(~sum);
 }
-
-FILE* file_open(const char* filename, const char* mode) 
-{
-	FILE* fp = fopen(filename,mode);
-	if (fp == NULL) 
-	{
-		printf("Can't open %s !",filename);
-		return NULL;
-	}
-	return fp;
-}
-
-void close_file(FILE* fp)
-{
-	fclose(fp);
-}
