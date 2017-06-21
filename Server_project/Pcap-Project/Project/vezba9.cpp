@@ -41,13 +41,13 @@ mutex packet_buff_mutex;
 mutex stdout_mutex;
 
 //MAC and IP adresses from client and server adapters
-unsigned char server_mac_addr[2][6] = { { 0x2c, 0xd0, 0x5a, 0x90, 0xba, 0x9a }, { 0x98, 0x40, 0xbb, 0x14, 0x59, 0x91 } };
+unsigned char server_mac_addr[2][6];
 unsigned char client_mac_addr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 unsigned char server_ip_addr[2][4] = { { 192, 168, 0, 10 },{ 169, 254, 176, 102 } };
 
-unsigned char client_wifi_ip_addr[4] = { 192, 168, 0, 14 };
-unsigned char client_eth_ip_addr[4] = { 169, 254, 176, 100 };
+unsigned char client_wifi_ip_addr[4];
+unsigned char client_eth_ip_addr[4];
 
 //Packet headers
 struct pcap_pkthdr* packet_header_wifi;
@@ -201,30 +201,7 @@ int main()
 	//Make correct ack packets
 	make_ack_packet(&ack_packet_wifi, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
 	make_ack_packet(&ack_packet_eth, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
-	//Set source and destination address
-	set_addresses(&ack_packet_wifi, 1, server_mac_addr[0], client_mac_addr, server_ip_addr[0], client_wifi_ip_addr);
-	set_addresses(&ack_packet_eth, 1, server_mac_addr[1], client_mac_addr, server_ip_addr[1], client_eth_ip_addr);
 
-	//Create datagram from ack packets
-	rec_wifi_udp_d = new ex_udp_datagram(ack_packet_wifi);
-	rec_eth_udp_d = new ex_udp_datagram(ack_packet_eth);
-
-	//Initialize checksum
-	rec_eth_udp_d->iph->checksum = 0;
-	rec_wifi_udp_d->iph->checksum = 0;
-
-	//Calculate ip checksum
-	rec_wifi_udp_d->iph->checksum = ip_checksum(rec_wifi_udp_d->iph, rec_wifi_udp_d->iph->header_length * 4);
-	rec_eth_udp_d->iph->checksum = ip_checksum(rec_eth_udp_d->iph, rec_eth_udp_d->iph->header_length * 4);
-
-	/*
-	//Initialize checksum
-	rec_eth_udp_d->uh->checksum = 0;
-	rec_wifi_udp_d->uh->checksum = 0;
-	//Calculate udp checksum
-	rec_wifi_udp_d->uh->checksum = udp_checksum(rec_wifi_udp_d->uh, 8, rec_wifi_udp_d->iph->src_addr, rec_wifi_udp_d->iph->dst_addr);
-	rec_eth_udp_d->uh->checksum = udp_checksum(rec_eth_udp_d->uh, 8, rec_eth_udp_d->iph->src_addr, rec_eth_udp_d->iph->dst_addr);
-	*/
 	//Create capture threads for adapters
 	wifi_cap_thread = new thread(wifi_thread_handle);
 	eth_cap_thread = new thread(eth_thread_handle);
@@ -278,6 +255,22 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 	//First datagram?
 	if (seq_num == 0)
 	{
+		for (int i = 0; i < 4; i++) 
+		{
+			client_wifi_ip_addr[i] = recv_packet->iph->src_addr[i];
+		}
+
+		//Set source and destination address
+		set_addresses(&ack_packet_wifi, 1, server_mac_addr[0], recv_packet->eh->src_address, server_ip_addr[0], client_wifi_ip_addr);
+		//Create datagram from ack packets
+		rec_wifi_udp_d = new ex_udp_datagram(ack_packet_wifi);
+
+		//Initialize checksum
+		rec_wifi_udp_d->iph->checksum = 0;
+
+		//Calculate ip checksum
+		rec_wifi_udp_d->iph->checksum = ip_checksum(rec_wifi_udp_d->iph, rec_wifi_udp_d->iph->header_length * 4);
+
 		unsigned int* data_size = (unsigned int*)(recv_packet->data);
 		*(rec_wifi_udp_d->seq_number) = *(recv_packet->seq_number);
 
@@ -361,6 +354,21 @@ void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_
 	//First datagram?
 	if (seq_num == 0)
 	{
+		for (int i = 0; i < 4; i++)
+		{
+			client_eth_ip_addr[i] = recv_packet->iph->src_addr[i];
+		}
+		//Set source and destination address
+		set_addresses(&ack_packet_eth, 1, server_mac_addr[1], recv_packet->eh->src_address, server_ip_addr[1], client_eth_ip_addr);
+		//Create datagram from ack packets
+		rec_eth_udp_d = new ex_udp_datagram(ack_packet_eth);
+
+		//Initialize checksum
+		rec_eth_udp_d->iph->checksum = 0;
+
+		//Calculate ip checksum
+		rec_eth_udp_d->iph->checksum = ip_checksum(rec_eth_udp_d->iph, rec_eth_udp_d->iph->header_length * 4);
+
 		unsigned int* data_size = (unsigned int*)(recv_packet->data);	
 		*(rec_eth_udp_d->seq_number) = *(recv_packet->seq_number);
 
