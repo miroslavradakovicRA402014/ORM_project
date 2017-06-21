@@ -253,7 +253,6 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 	recv_packet->iph->checksum = 0;
 	if (checksum != ip_checksum(recv_packet->iph, recv_packet->iph->header_length * 4)) 
 	{
-		//printf("Invalid checksum !\n");
 		return;
 	}
 
