@@ -5,9 +5,9 @@ c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\pro
 c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(171): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
 c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(199): warning C4267: 'argument': conversion from 'size_t' to 'u_short', possible loss of data
 c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(74): warning C4101: 'sentBytes': unreferenced local variable
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(313): warning C4018: '<': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(416): warning C4018: '<': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(456): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(292): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(397): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(437): warning C4018: '<': signed/unsigned mismatch
 c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(94): warning C4715: 'get_interface_addr': not all control paths return a value
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
   Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM_server\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe

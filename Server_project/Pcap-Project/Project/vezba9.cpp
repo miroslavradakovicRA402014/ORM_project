@@ -77,7 +77,7 @@ int main()
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
 	//filter expression 
-	char *filter_exp[2] = { "udp port 27015 and ip dst 192.168.0.10", "udp port 27015 and ip dst 169.254.176.100" };		//port and eth ip
+	char *filter_exp[2] = { "udp port 27015 and ip dst 192.168.0.10", "udp port 27015 and ip dst 169.254.176.102" };		//port and eth ip
 	struct bpf_program fcode;
 	struct bpf_program fcode2;
 
@@ -248,10 +248,18 @@ void packet_handler_wifi(struct pcap_pkthdr* packet_header, unsigned char* packe
 	recv_packet = new ex_udp_datagram(packet_header, packet_data);
 	//Get sequence number from datagram 
 	u_long seq_num = (u_long)ntohl(*((u_long*)recv_packet->seq_number));
+	//Checksum correct?
+	unsigned short checksum = recv_packet->iph->checksum;
+	recv_packet->iph->checksum = 0;
+	if (checksum != ip_checksum(recv_packet->iph, recv_packet->iph->header_length * 4)) 
+	{
+		//printf("Invalid checksum !\n");
+		return;
+	}
 
-	stdout_mutex.lock();
-	printf("Wi-Fi_Seq: %d\n", seq_num);
-	stdout_mutex.unlock();
+	//stdout_mutex.lock();
+	//printf("Wi-Fi_Seq: %d\n", seq_num);
+	//stdout_mutex.unlock();
 	//First datagram?
 	if (seq_num == 0)
 	{
@@ -347,10 +355,17 @@ void packet_handler_eth(struct pcap_pkthdr* packet_header,unsigned char* packet_
 	recv_packet = new ex_udp_datagram(packet_header, packet_data);
 	//Get sequence number from datagram 	
 	u_long seq_num = (u_long)ntohl(*((u_long*)recv_packet->seq_number));
+	//Checksum correct?
+	unsigned short checksum = recv_packet->iph->checksum;
+	recv_packet->iph->checksum = 0;
+	if (checksum != ip_checksum(recv_packet->iph, recv_packet->iph->header_length * 4))
+	{
+		return;
+	}
 
-	stdout_mutex.lock();
-	printf("Eth_Seq: %d\n", seq_num);
-	stdout_mutex.unlock();
+	//stdout_mutex.lock();
+	//printf("Eth_Seq: %d\n", seq_num);
+	//stdout_mutex.unlock();
 	//First datagram?
 	if (seq_num == 0)
 	{
