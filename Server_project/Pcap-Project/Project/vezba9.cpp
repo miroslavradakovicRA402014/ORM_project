@@ -41,15 +41,13 @@ mutex packet_buff_mutex;
 mutex stdout_mutex;
 
 //MAC and IP adresses from client and server adapters
-unsigned char client_wifi_mac_addr[6] = { 0x90, 0xcd, 0xb6, 0x2c, 0x40, 0x39 };
-unsigned char client_eth_mac_addr[6] = { 0x98, 0x40, 0xbb, 0x14, 0x59, 0x91 };
-unsigned char server_mac_addr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+unsigned char server_mac_addr[2][6] = { { 0x2c, 0xd0, 0x5a, 0x90, 0xba, 0x9a }, { 0x98, 0x40, 0xbb, 0x14, 0x59, 0x91 } };
+unsigned char client_mac_addr[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
-unsigned char client_wifi_ip_addr[4] = { 192, 168, 0, 16 };
-unsigned char client_eth_ip_addr[4] = { 169, 254, 176, 102 };
+unsigned char server_ip_addr[2][4] = { { 192, 168, 0, 10 },{ 169, 254, 176, 102 } };
 
-unsigned char server_wifi_ip_addr[4] = { 192, 168, 0, 17 };
-unsigned char server_eth_ip_addr[4] = { 169, 254, 176, 100 };
+unsigned char client_wifi_ip_addr[4] = { 192, 168, 0, 14 };
+unsigned char client_eth_ip_addr[4] = { 169, 254, 176, 100 };
 
 //Packet headers
 struct pcap_pkthdr* packet_header_wifi;
@@ -79,8 +77,7 @@ int main()
 	char error_buffer [PCAP_ERRBUF_SIZE];
 	unsigned int netmask;
 	//filter expression 
-	char filter_exp2[] = "udp port 27015 and ip dst 169.254.176.102";		//port and eth ip
-	char filter_exp[] = "udp port 27015 and ip dst 192.168.0.16";			//port and wifi ip
+	char *filter_exp[2] = { "udp port 27015 and ip dst 192.168.0.10", "udp port 27015 and ip dst 169.254.176.100" };		//port and eth ip
 	struct bpf_program fcode;
 	struct bpf_program fcode2;
 
@@ -169,10 +166,15 @@ int main()
 			netmask = 0;
 		else
 			netmask = ((struct sockaddr_in *)(device[j]->addresses->netmask))->sin_addr.s_addr;
+
+		get_addresses(device[j], server_ip_addr, server_mac_addr, j);
+		set_filter_exp(&filter_exp[j], device[j], PORT_NUMBER);
 	}
+
+
 	
 	// Compile the filter    
-	if (pcap_compile(device_handle_in_wifi, &fcode, filter_exp, 1, netmask) < 0 || pcap_compile(device_handle_in_eth, &fcode2, filter_exp2, 1, netmask) < 0)
+	if (pcap_compile(device_handle_in_wifi, &fcode, filter_exp[0], 1, netmask) < 0 || pcap_compile(device_handle_in_eth, &fcode2, filter_exp[1], 1, netmask) < 0)
 	{
 		printf("\n Unable to compile the packet filter. Check the syntax.\n");
 		return -1;
@@ -200,8 +202,8 @@ int main()
 	make_ack_packet(&ack_packet_wifi, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
 	make_ack_packet(&ack_packet_eth, packet_data_wifi, packet_header_wifi, PORT_NUMBER);
 	//Set source and destination address
-	set_addresses(&ack_packet_wifi, 1, client_wifi_mac_addr, server_mac_addr, client_wifi_ip_addr, server_wifi_ip_addr);
-	set_addresses(&ack_packet_eth, 1, client_eth_mac_addr, server_mac_addr, client_eth_ip_addr, server_eth_ip_addr);
+	set_addresses(&ack_packet_wifi, 1, server_mac_addr[0], client_mac_addr, server_ip_addr[0], client_wifi_ip_addr);
+	set_addresses(&ack_packet_eth, 1, server_mac_addr[1], client_mac_addr, server_ip_addr[1], client_eth_ip_addr);
 
 	//Create datagram from ack packets
 	rec_wifi_udp_d = new ex_udp_datagram(ack_packet_wifi);
@@ -215,14 +217,14 @@ int main()
 	rec_wifi_udp_d->iph->checksum = ip_checksum(rec_wifi_udp_d->iph, rec_wifi_udp_d->iph->header_length * 4);
 	rec_eth_udp_d->iph->checksum = ip_checksum(rec_eth_udp_d->iph, rec_eth_udp_d->iph->header_length * 4);
 
-	
+	/*
 	//Initialize checksum
 	rec_eth_udp_d->uh->checksum = 0;
 	rec_wifi_udp_d->uh->checksum = 0;
 	//Calculate udp checksum
 	rec_wifi_udp_d->uh->checksum = udp_checksum(rec_wifi_udp_d->uh, 8, rec_wifi_udp_d->iph->src_addr, rec_wifi_udp_d->iph->dst_addr);
 	rec_eth_udp_d->uh->checksum = udp_checksum(rec_eth_udp_d->uh, 8, rec_eth_udp_d->iph->src_addr, rec_eth_udp_d->iph->dst_addr);
-
+	*/
 	//Create capture threads for adapters
 	wifi_cap_thread = new thread(wifi_thread_handle);
 	eth_cap_thread = new thread(eth_thread_handle);

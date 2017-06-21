@@ -1,10 +1,13 @@
 ﻿  vezba9.cpp
 c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(54): warning C4018: '<': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(94): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(117): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(75): warning C4101: 'sentBytes': unreferenced local variable
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(288): warning C4018: '<': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(371): warning C4018: '<': signed/unsigned mismatch
-c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(411): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(76): warning C4996: 'inet_ntoa': Use inet_ntop() or InetNtop() instead or define _WINSOCK_DEPRECATED_NO_WARNINGS to disable deprecated API warnings
+  c:\program files (x86)\windows kits\8.1\include\um\winsock2.h(1868): note: see declaration of 'inet_ntoa'
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(171): warning C4244: 'return': conversion from 'unsigned long' to 'uint16_t', possible loss of data
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(199): warning C4267: 'argument': conversion from 'size_t' to 'u_short', possible loss of data
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(74): warning C4101: 'sentBytes': unreferenced local variable
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(291): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(374): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\vezba9.cpp(414): warning C4018: '<': signed/unsigned mismatch
+c:\users\miroslav\desktop\orm_server\orm_project\server_project\pcap-project\project\functions.h(94): warning C4715: 'get_interface_addr': not all control paths return a value
 vezba9.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/OPT:LBR' specification
   Project.vcxproj -> C:\Users\Miroslav\Desktop\ORM_server\ORM_project\Server_project\Pcap-Project\Project\.\Debug\Project.exe
